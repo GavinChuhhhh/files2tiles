@@ -1,0 +1,13 @@
+name: files2tiles
+channels:
+  - conda-forge
+dependencies:
+  - vc=14.2
+  - wheel=0.37.1
+  - gdal=3.4.2
+  - proj=9.0.0
+  - numpy=1.22.4
+  - pip=22.1.2
+  - python=3.10.4
+  - rasterio=1.2.10
+  - snappy=1.1.9
