@@ -7,9 +7,6 @@ from tile import TileSchema
 from osgeo_utils import gdal2tiles
 from osgeo import gdal
 
-vrt_options = gdal.BuildVRTOptions(resampleAlg='cubic', addAlpha=True)
-my_vrt = gdal.BuildVRT('my.vrt', ['one.tif', 'two.tif'], options=vrt_options)
-my_vrt = None
 
 def get_bound(input_file: str):
     with rasterio.open(input_file) as dataset:
@@ -66,19 +63,18 @@ def file2tiles(key, files, output):
     output_folder = output + '\\' + z_level + '\\' + row
     output_tile = output + '\\' + z_level + '\\' + row + '\\' + col + '.png'
 
-    vrt_options = gdal.BuildVRTOptions(resampleAlg='cubic', addAlpha=True)
-    my_vrt = gdal.BuildVRT('my.vrt', ['one.tif', 'two.tif'], options=vrt_options)
-
-
     cmd_2vrt = 'gdalbuildvrt %s %s' % (vrt_file, file_list)
     subprocess.run(cmd_2vrt)
 
     # vrt to rgba vrt 的同时裁剪到
     (ulx, uly), (lrx, lry) = TileSchema.get_bound_lonlat_by_row_col(z_level, row, col)
-    # ulx = ulx - 0.01
-    # lrx = lrx + 0.01
-    # uly = uly + 0.01
-    # lry = lry - 0.01
+    buff_x = (lrx-ulx)/10
+    buff_y = (uly-lry)/10
+    ulx -= buff_x
+    lrx += buff_x
+    uly += buff_y
+    lry -= buff_y
+
     proj_win_srs = 'EPSG:4326'
     cmd_vrt2vrt = 'gdal_translate -of vrt ' \
                   '-projwin %f %f %f %f -projwin_srs %s ' % (ulx, uly, lrx, lry, proj_win_srs) + \
@@ -87,33 +83,32 @@ def file2tiles(key, files, output):
     subprocess.run(cmd_vrt2vrt)
 
     # --resampling=near: nearest neighbour resampling (fastest algorithm, worst interpolation quality).
-    arg_list = [' ','--resampling=max', '-q', '--xyz', '--processes=2', '--webviewer=none',
+    arg_list = [' ', '--resampling=near', '-q', '--xyz', '--processes=2', '--webviewer=none',
                 '--zoom=%s' % z_level, vrt_file1, temp]
     print('正在生成%s' % output_tile)
     gdal2tiles.main(arg_list)
 
-    os.makedirs(output_folder,exist_ok=True)
+    os.makedirs(output_folder, exist_ok=True)
     shutil.copyfile(temp_tile, output_tile)
 
     shutil.rmtree(temp)
 
-
 def main(opts):
-    input_folder = os.path.abspath(vars(opts)['input_folder'])
+    input_folder = vars(opts)['input_folder']
     z_min, z_max = vars(opts)['zoom'].split('-')
     output = os.path.abspath(vars(opts)['output'])
+    os.makedirs(output,exist_ok=True)
 
     # 获得缩放、瓦片行列号与输入文件的映射字典
     for z_level in range(int(z_min), int(z_max) + 1):
         tile_file_map = get_tile_file_map(input_folder, z_level)
-        # file2tiles('9_377_205',tile_file_map['9_377_205'],output)
         for key, files in tile_file_map.items():
             file2tiles(key, files, output)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Make tiles from a tiff input files' folder")
-    parser.add_argument("-i", "--input", dest="input_folder", default=None, type=str, help="tiff input files' folder")
+    parser.add_argument("-i", "--input", dest="input_folder", type=str,  help="tif folder")
     parser.add_argument("-z", "--zoom", dest="zoom", default='5-15', type=str,
                         help="This is zoom level, '-z=5-15'for example means that zoom level range from 5 to 15.")
     parser.add_argument("-o", "--output", dest="output", default=None, type=str, help="output folder")
