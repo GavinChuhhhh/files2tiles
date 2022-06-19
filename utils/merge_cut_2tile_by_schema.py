@@ -3,7 +3,7 @@ import argparse
 import rasterio
 import subprocess
 import os
-from tile import TileSchema
+from tile_xyz_schema import TileSchema
 from osgeo_utils import gdal2tiles
 from osgeo import gdal
 
@@ -68,8 +68,8 @@ def file2tiles(key, files, output):
 
     # vrt to rgba vrt 的同时裁剪到
     (ulx, uly), (lrx, lry) = TileSchema.get_bound_lonlat_by_row_col(z_level, row, col)
-    buff_x = (lrx-ulx)/10
-    buff_y = (uly-lry)/10
+    buff_x = (lrx - ulx) / 10
+    buff_y = (uly - lry) / 10
     ulx -= buff_x
     lrx += buff_x
     uly += buff_y
@@ -93,11 +93,12 @@ def file2tiles(key, files, output):
 
     shutil.rmtree(temp)
 
+
 def main(opts):
     input_folder = vars(opts)['input_folder']
     z_min, z_max = vars(opts)['zoom'].split('-')
     output = os.path.abspath(vars(opts)['output'])
-    os.makedirs(output,exist_ok=True)
+    os.makedirs(output, exist_ok=True)
 
     # 获得缩放、瓦片行列号与输入文件的映射字典
     for z_level in range(int(z_min), int(z_max) + 1):
@@ -108,7 +109,7 @@ def main(opts):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Make tiles from a tiff input files' folder")
-    parser.add_argument("-i", "--input", dest="input_folder", type=str,  help="tif folder")
+    parser.add_argument("-i", "--input", dest="input_folder", type=str, help="tif folder")
     parser.add_argument("-z", "--zoom", dest="zoom", default='5-15', type=str,
                         help="This is zoom level, '-z=5-15'for example means that zoom level range from 5 to 15.")
     parser.add_argument("-o", "--output", dest="output", default=None, type=str, help="output folder")
