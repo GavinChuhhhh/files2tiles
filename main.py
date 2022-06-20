@@ -3,7 +3,7 @@ import os
 import shutil
 
 import product_tiles
-import proj_merge
+from process import proj
 import xyz_tiles
 
 
@@ -23,7 +23,7 @@ def main(opts):
     os.makedirs(temp, exist_ok=True)
 
     # 转投影, 输出为投影epsg：4326
-    proj_files = proj_merge.proj(files, output=temp)
+    proj_files = proj(files, output=temp)
 
     # 生成tiles产品
     if vars(opts)["product_folder"] is not None:
@@ -39,7 +39,7 @@ def main(opts):
         for z_level in range(int(z_min), int(z_max) + 1):
             xyz_tiles.files_xyz_tiles(z_level, proj_files, output=xyz_folder, temp=temp)
 
-    shutil.rmtree(temp)
+    # shutil.rmtree(temp)
 
 
 if __name__ == "__main__":

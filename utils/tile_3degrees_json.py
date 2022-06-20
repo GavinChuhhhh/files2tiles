@@ -1,5 +1,4 @@
 import json
-import os
 
 
 def get_json():
@@ -45,20 +44,27 @@ def get_shp():
     # 使用fiona.open方法打开文件，写入数据
     with fiona.open('../etc/tilesby3degree.shp', mode='w', driver='ESRI Shapefile',
                     schema=schema, crs='EPSG:4326', encoding='utf-8') as layer:
-        # 依次遍历GeoJSON中的空间对象
         id = 0
         for name, xy in data.items():
             # 从GeoJSON中读取JSON格式的geometry和properties的记录
             id += 1
-            lt = xy[0], xy[1]
-            rt = xy[2], xy[1]
-            lb = xy[0], xy[3]
-            rb = xy[2], xy[3]
-            element = {'geometry': {'type': 'Polygon', 'coordinates': [[lt, rt, rb, lb]]},
-                       'properties': {'id': id,
-                                      'name': name}}
+            geometry = get_element_from_bounds(xy)
+            element = {'geometry': geometry, 'properties': {'id': id,
+                                                            'name': name}}
             # 写入文件
             layer.write(element)
 
 
-get_shp()
+def get_element_from_bounds(bounds):
+    xy = bounds
+    lt = [xy[0], xy[1]]
+    rt = [xy[2], xy[1]]
+    lb = [xy[0], xy[3]]
+    rb = [xy[2], xy[3]]
+    geometry = {'type': 'Polygon', 'coordinates': [[lt, rt, rb, lb]]}
+    return geometry
+
+
+if __name__ == '__main__':
+    get_json()
+    get_shp()

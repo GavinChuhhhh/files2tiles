@@ -10,3 +10,4 @@ dependencies:
   - rasterio>=1.2.10
   - fiona>=1.8.21
   - shapely>=1.8.2
+  - pycrs>=1.0.2
