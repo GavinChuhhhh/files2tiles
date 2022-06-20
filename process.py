@@ -7,14 +7,15 @@ from fiona.crs import from_epsg
 import pycrs
 
 
-def proj(files: list, output, epsg=4326):
+def proj(files: list, output, epsg=4326, form='vrt'):
     proj_files = []
     projection = "epsg:%s" % epsg
 
     for file in files:
         with rasterio.open(file) as f:
             if f.crs["init"] != "epsg:4326":
-                proj_f_name = file.split("\\")[-1].replace(".tif", "_epsg" + str(epsg) + ".tif")
+                suffix = '.' + form
+                proj_f_name = file.split("\\")[-1].replace(".tif", "_epsg" + str(epsg) + suffix)
                 proj_file = os.path.join(output, proj_f_name)
                 warp_options = gdal.WarpOptions(dstSRS=projection)
                 # rasterio.warp
@@ -30,7 +31,7 @@ def proj(files: list, output, epsg=4326):
 def build_merge_vrt(f_list: list, output: str, **kw):
     tag = kw['tag']
     if tag is None:
-        tag = 'merge'
+        tag = 'build_merge'
     vrt_merge = tempfile.mktemp(suffix='.vrt', prefix=str(tag), dir=output)
 
     # resampleAlg= {nearest (default),bilinear,cubic,cubicspline,lanczos,average,mode}
@@ -50,13 +51,17 @@ def clip_by_geometry(input_f, geom, out_tif, **kwargs):
     roi_polygon_src_coords = warp.transform_geom({'init': 'epsg:4326'},
                                                  data.crs,
                                                  [geom])
-    out_img, out_transform = mask.mask(dataset=data, shapes=roi_polygon_src_coords, crop=True,filled=0)
+    out_img, out_transform = mask.mask(dataset=data, shapes=roi_polygon_src_coords, all_touched=False, crop=True,
+                                       filled=0, pad=False)
     out_meta = data.meta.copy()
-    epsg_code = int(data.crs.data['init'][5:])
+    # epsg_code = int(data.crs.data['init'][5:])
     out_meta.update(
         {"driver": "GTiff", "height": out_img.shape[1], "width": out_img.shape[2], "transform": out_transform,
-         "crs": pycrs.parse.from_epsg_code(epsg_code).to_proj4()}
-        )
+         "crs": data.crs, "compress": 'lzw'}
+    )
+    data_color = data.colormap(1)
+
     with rasterio.open(out_tif, "w", **out_meta) as dest:
         dest.write(out_img)
+        dest.write_colormap(1,data_color)
     return True

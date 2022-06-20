@@ -8,7 +8,7 @@ from utils.tile_3degrees_json import get_element_from_bounds
 def produce_3_degrees(input_files, output, temp,tag='Lake'):
     tile_file_map = get_tile_file_map(input_files)
     for tile_name, file_map in tile_file_map.items():
-        vrt = build_merge_vrt(file_map['files'], temp, tag="3degrees_")
+        vrt = build_merge_vrt(file_map['files'], temp, tag=tile_name+'_')
         geom = get_element_from_bounds(file_map['bounds'])
         f_name = os.path.join(output,tile_name+'_'+tag+'.tif')
         if clip_by_geometry(vrt, geom, f_name):

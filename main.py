@@ -28,6 +28,7 @@ def main(opts):
     # 生成tiles产品
     if vars(opts)["product_folder"] is not None:
         product_dir = os.path.abspath(vars(opts)["product_folder"])
+        os.makedirs(product_dir,exist_ok=True)
         product_tiles.produce_3_degrees(proj_files, output=product_dir, temp=temp)
 
     # 生成xyz tiles
