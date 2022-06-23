@@ -1,8 +1,9 @@
+import fiona
 import json
 
 
 def get_json():
-    dict = {}
+    map_dict = {}
     for lat in range(-81, 85, 3):
         if lat >= 0:
             lat_tag = 'N' + str(abs(lat))
@@ -24,13 +25,10 @@ def get_json():
             lat_bottom = lat - 3
 
             value = [float(lon_left), float(lat_top), float(lon_right), float(lat_bottom)]
-            dict[key] = value
-    data = json.dumps(dict, indent=4, separators=(',', ':'))
+            map_dict[key] = value
+    data = json.dumps(map_dict, indent=4, separators=(',', ':'))
     with open(r'../etc/tiles_3degrees.json', 'w') as j:
         j.write(data)
-
-
-import fiona
 
 
 def get_shp():
@@ -44,17 +42,18 @@ def get_shp():
     # 使用fiona.open方法打开文件，写入数据
     with fiona.open('../etc/tilesby3degree.shp', mode='w', driver='ESRI Shapefile',
                     schema=schema, crs='EPSG:4326', encoding='utf-8') as layer:
-        id = 0
+        proper_id = 0
         for name, xy in data.items():
             # 从GeoJSON中读取JSON格式的geometry和properties的记录
-            id += 1
+            proper_id += 1
             geometry = get_element_from_bounds(xy)
-            element = {'geometry': geometry, 'properties': {'id': id,
+            element = {'geometry': geometry, 'properties': {'id': proper_id,
                                                             'name': name}}
             # 写入文件
             layer.write(element)
 
 
+# 根据四至点坐标获得geometry
 def get_element_from_bounds(bounds):
     xy = bounds
     lt = [xy[0], xy[1]]

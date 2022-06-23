@@ -3,31 +3,40 @@ import tempfile
 from rasterio import mask, warp
 import rasterio
 from osgeo import gdal
-from fiona.crs import from_epsg
-import pycrs
+from osgeo_utils import gdal2tiles
 
 
-def proj(files: list, output, epsg=4326, form='vrt'):
-    proj_files = []
+def pygdal2tiles(options):
+    gdal2tiles.main(options)
+
+
+def pygdal_translate(input_f, **kwargs):
+    arg_rgb = kwargs['rgbExpand'] if 'rgbExpand' in kwargs else 'rgb'
+    arg_format = kwargs['format'] if 'format' in kwargs else 'vrt'
+    arg_nodata = kwargs['noData'] if 'noData' in kwargs else 0
+    translate_options = gdal.TranslateOptions(format=arg_format, rgbExpand=arg_rgb, noData=arg_nodata)
+    output_f = os.path.dirname(input_f) + "\\%s_" % arg_rgb + os.path.basename(input_f)
+    gdal.Translate(output_f, input_f, options=translate_options)
+    return output_f
+
+
+def proj(file, output, epsg=4326, form='vrt'):
     projection = "epsg:%s" % epsg
-
-    for file in files:
-        with rasterio.open(file) as f:
-            if f.crs["init"] != "epsg:4326":
-                suffix = '.' + form
-                proj_f_name = file.split("\\")[-1].replace(".tif", "_epsg" + str(epsg) + suffix)
-                proj_file = os.path.join(output, proj_f_name)
-                warp_options = gdal.WarpOptions(dstSRS=projection)
-                # rasterio.warp
-                gdal.Warp(proj_file, file, options=warp_options)
-                proj_files.append(proj_file)
-                continue
-            else:
-                proj_files.append(file)
-
-    return proj_files
+    with rasterio.open(file) as f:
+        if f.crs["init"] != "epsg:4326":
+            suffix = '.' + form
+            proj_f_name = file.split("\\")[-1].replace(".tif", "_epsg" + str(epsg) + suffix)
+            proj_file = os.path.join(output, proj_f_name)
+            warp_options = gdal.WarpOptions(dstSRS=projection)
+            # rasterio.warp
+            # todo 查看warp不成功error情况
+            gdal.Warp(proj_file, file, options=warp_options)
+            return proj_file
+        else:
+            return file
 
 
+# todo 确认buildvrt最大范围
 def build_merge_vrt(f_list: list, output: str, **kw):
     tag = kw['tag']
     if tag is None:
@@ -63,5 +72,4 @@ def clip_by_geometry(input_f, geom, out_tif, **kwargs):
 
     with rasterio.open(out_tif, "w", **out_meta) as dest:
         dest.write(out_img)
-        dest.write_colormap(1,data_color)
-    return True
+        dest.write_colormap(1, data_color)
