@@ -28,7 +28,8 @@ def main(opts):
 
     vrt_merge = build_merge_vrt(files, output=temp, tag="xyz_merge_")
 
-    vrt_translate_rgb = pygdal_translate(vrt_merge, output=temp, format="vrt", rgbExpand="rgba", noData=0)
+    vrt_translate_rgb = pygdal_translate(vrt_merge, output=temp, format="tif", rgbExpand="rgba", noData=0)
+    # vrt_translate_rgb = pygdal_translate(vrt_merge, output=temp, format="vrt", rgbExpand="rgba", noData=0)
 
     # 此处可并行处理
     for z_level in range(int(z_min), int(z_max) + 1):

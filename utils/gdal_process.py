@@ -16,7 +16,7 @@ def pygdal_translate(input_f, **kwargs):
     arg_format = kwargs['format'] if 'format' in kwargs else 'vrt'
     arg_nodata = kwargs['noData'] if 'noData' in kwargs else 0
     translate_options = gdal.TranslateOptions(format=arg_format, rgbExpand=arg_rgb, noData=arg_nodata)
-    output_f = os.path.dirname(input_f) + "\\%s_" % arg_rgb + os.path.basename(input_f)
+    output_f = os.path.dirname(input_f) + "\\%s_" % arg_rgb + os.path.basename(input_f)+"."+arg_format
     if gdal.Translate(output_f, input_f, options=translate_options) is not None:
         return output_f
 
