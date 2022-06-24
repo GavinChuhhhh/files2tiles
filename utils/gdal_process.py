@@ -6,6 +6,7 @@ from osgeo import gdal
 from osgeo_utils import gdal2tiles
 
 
+
 def pygdal2tiles(options):
     gdal2tiles.main(options)
 
@@ -16,8 +17,8 @@ def pygdal_translate(input_f, **kwargs):
     arg_nodata = kwargs['noData'] if 'noData' in kwargs else 0
     translate_options = gdal.TranslateOptions(format=arg_format, rgbExpand=arg_rgb, noData=arg_nodata)
     output_f = os.path.dirname(input_f) + "\\%s_" % arg_rgb + os.path.basename(input_f)
-    gdal.Translate(output_f, input_f, options=translate_options)
-    return output_f
+    if gdal.Translate(output_f, input_f, options=translate_options) is not None:
+        return output_f
 
 
 def proj(file, output, epsg=4326, form='vrt'):
@@ -28,10 +29,15 @@ def proj(file, output, epsg=4326, form='vrt'):
             proj_f_name = file.split("\\")[-1].replace(".tif", "_epsg" + str(epsg) + suffix)
             proj_file = os.path.join(output, proj_f_name)
             warp_options = gdal.WarpOptions(dstSRS=projection)
-            # rasterio.warp
             # todo 查看warp不成功error情况
-            gdal.Warp(proj_file, file, options=warp_options)
-            return proj_file
+            # 如果输入文件有误
+            # TypeError: object of wrong GDALDatasetShadow
+            # 如果输出文件已存在，不会报错会直接覆盖。
+            # 如果投影dstSRS无法被识别，比如"epsg=4326"误改为"epsg=sag",gdal.WarpOptions会报错
+            # ERROR 1: Translating source or target SRS failed
+            # TypeError: in method 'wrapper_GDALWarpDestName', argument 4 of type 'GDALWarpAppOptions *'
+            if gdal.Warp(proj_file, file, options=warp_options) is not None:
+                return proj_file
         else:
             return file
 
@@ -45,8 +51,8 @@ def build_merge_vrt(f_list: list, output: str, **kw):
 
     # resampleAlg= {nearest (default),bilinear,cubic,cubicspline,lanczos,average,mode}
     vrt_options = gdal.BuildVRTOptions(srcNodata=0)
-    gdal.BuildVRT(vrt_merge, f_list, options=vrt_options)
-    return vrt_merge
+    if gdal.BuildVRT(vrt_merge, f_list, options=vrt_options) is not None:
+        return vrt_merge
 
 
 def clip_by_geometry(input_f, geom, out_tif, **kwargs):
